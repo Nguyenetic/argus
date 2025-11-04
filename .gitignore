@@ -90,3 +90,8 @@ alembic/versions/__pycache__/
 
 # Playwright
 playwright/.env
+
+
+# Added by cargo
+
+/target

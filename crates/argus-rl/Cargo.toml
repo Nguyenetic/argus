@@ -1,0 +1,17 @@
+[package]
+name = "argus-rl"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+argus-core = { path = "../argus-core" }
+argus-browser = { path = "../argus-browser" }
+tokio.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rand.workspace = true
