@@ -10,6 +10,9 @@ name = "argus"
 path = "src/main.rs"
 
 [dependencies]
+# NexusQL - Brain-inspired database backend
+nexusql = { path = "../NexusQL" }
+
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
 
@@ -39,6 +42,3 @@ uuid = { version = "1.6", features = ["v4"] }
 
 # Time
 chrono = { version = "0.4", features = ["serde"] }
-
-# File operations
-serde_yaml = "0.9"
