@@ -1,0 +1,80 @@
+# Minimal Docker Compose - Only Databases
+# Use this if you want to run Python services locally but need PostgreSQL + Redis
+#
+# Usage:
+#   docker-compose -f docker-compose.minimal.yml up -d
+#
+# Then run Python services locally:
+#   uvicorn api.app:app --reload
+#   celery -A orchestration.celery_app worker
+
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector extension
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: scraper_postgres_minimal
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: scraper
+      POSTGRES_PASSWORD: scraper123
+      POSTGRES_DB: webscraper
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scraper -d webscraper"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis for caching and Celery
+  redis:
+    image: redis:7-alpine
+    container_name: scraper_redis_minimal
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # Optional: MinIO for S3-compatible storage (uncomment if needed)
+  # minio:
+  #   image: minio/minio:latest
+  #   container_name: scraper_minio_minimal
+  #   ports:
+  #     - "9000:9000"    # API
+  #     - "9001:9001"    # Console
+  #   environment:
+  #     MINIO_ROOT_USER: minioadmin
+  #     MINIO_ROOT_PASSWORD: minioadmin123
+  #   command: server /data --console-address ":9001"
+  #   volumes:
+  #     - minio_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+  #     interval: 30s
+  #     timeout: 20s
+  #     retries: 3
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  # minio_data:
+  #   driver: local
+
+networks:
+  default:
+    name: scraper_network_minimal
