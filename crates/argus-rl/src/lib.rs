@@ -18,6 +18,7 @@ pub mod buffer;
 pub mod networks;
 pub mod reward;
 pub mod state;
+pub mod trainer;
 
 pub use action::Action;
 pub use agent::RLAgent;
@@ -25,3 +26,4 @@ pub use buffer::{ReplayBuffer, Transition};
 pub use networks::{ActorNetwork, CriticNetwork, TemperatureParameter};
 pub use reward::{RewardCalculator, StepOutcome};
 pub use state::State;
+pub use trainer::{SdsacTrainer, TrainerConfig, TrainingMetrics};
