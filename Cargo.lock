@@ -186,12 +186,16 @@ dependencies = [
  "argus-core",
  "async-trait",
  "chromiumoxide",
+ "chrono",
  "futures",
  "rand",
  "reqwest",
+ "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
