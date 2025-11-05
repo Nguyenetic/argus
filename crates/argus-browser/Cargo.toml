@@ -1,17 +1,18 @@
 [package]
 name = "argus-browser"
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
-license.workspace = true
+version = "0.1.0"
+edition = "2021"
+authors = ["Nguyenetic"]
+license = "MIT"
 
 [dependencies]
 argus-core = { path = "../argus-core" }
-tokio.workspace = true
-anyhow.workspace = true
-thiserror.workspace = true
-tracing.workspace = true
-chromiumoxide.workspace = true
-rand.workspace = true
-async-trait.workspace = true
-reqwest.workspace = true
+tokio = { version = "1.35", features = ["full"] }
+anyhow = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+chromiumoxide = "0.5"
+rand = "0.8"
+async-trait = "0.1"
+reqwest = { version = "0.11", features = ["json"] }
+futures = "0.3"

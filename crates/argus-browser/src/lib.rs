@@ -1,10 +1,12 @@
 //! Argus Browser - Browser automation for intelligent scraping
 
-use argus_core::{Error, Result};
+use argus_core::Result;
 
 pub mod chrome;
+pub mod pool;
 
 pub use chrome::ChromeBrowser;
+pub use pool::{BrowserGuard, BrowserPool};
 
 /// Trait for browser automation backends
 #[async_trait::async_trait]
