@@ -16,6 +16,8 @@ pub mod action;
 pub mod agent;
 pub mod behavior;
 pub mod buffer;
+pub mod callbacks;
+pub mod ensemble;
 pub mod environment;
 pub mod executor;
 pub mod integration;
@@ -28,6 +30,11 @@ pub use action::Action;
 pub use agent::RLAgent;
 pub use behavior::{AttentionModel, MousePathGenerator, Point, ScrollGenerator, TimingGenerator};
 pub use buffer::{ReplayBuffer, Transition};
+pub use callbacks::{
+    CSVLogger, Callback, CallbackManager, ConsoleLogger, EarlyStopping, EpisodeMetrics,
+    LearningRateScheduler, ModelCheckpoint, PerformanceMonitor, ScheduleType,
+};
+pub use ensemble::{AdaptiveEnsemble, AgentEnsemble, EnsembleStatistics, EnsembleStrategy};
 pub use environment::{BotDetector, DetectionReason, DetectionResult, TrainingEnvironment};
 pub use executor::{ActionExecutor, ExecutionResult};
 pub use integration::{
