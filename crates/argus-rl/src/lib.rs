@@ -14,7 +14,9 @@
 
 pub mod action;
 pub mod agent;
+pub mod behavior;
 pub mod buffer;
+pub mod environment;
 pub mod networks;
 pub mod reward;
 pub mod state;
@@ -22,7 +24,9 @@ pub mod trainer;
 
 pub use action::Action;
 pub use agent::RLAgent;
+pub use behavior::{AttentionModel, MousePathGenerator, Point, ScrollGenerator, TimingGenerator};
 pub use buffer::{ReplayBuffer, Transition};
+pub use environment::{BotDetector, DetectionReason, DetectionResult, TrainingEnvironment};
 pub use networks::{ActorNetwork, CriticNetwork, TemperatureParameter};
 pub use reward::{RewardCalculator, StepOutcome};
 pub use state::State;
