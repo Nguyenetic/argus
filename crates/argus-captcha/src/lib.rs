@@ -27,7 +27,11 @@ pub mod image_captcha;
 pub mod models;
 pub mod ocr;
 pub mod puzzle;
+pub mod rl_integration;
 pub mod solver;
 
 pub use common::{CaptchaImage, DetectedObject, Point};
-pub use solver::{CaptchaSolver, CaptchaType, SolverConfig, SolverResult};
+pub use rl_integration::{
+    CaptchaDetection, CaptchaOutcome, IntegratedBotAgent, IntegrationConfig, IntegrationMetrics,
+};
+pub use solver::{CaptchaSolver, CaptchaType, Solution, SolverConfig, SolverResult};
