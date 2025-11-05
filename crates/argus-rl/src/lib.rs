@@ -14,10 +14,14 @@
 
 pub mod action;
 pub mod agent;
+pub mod buffer;
+pub mod networks;
 pub mod reward;
 pub mod state;
 
 pub use action::Action;
 pub use agent::RLAgent;
+pub use buffer::{ReplayBuffer, Transition};
+pub use networks::{ActorNetwork, CriticNetwork, TemperatureParameter};
 pub use reward::{RewardCalculator, StepOutcome};
 pub use state::State;
