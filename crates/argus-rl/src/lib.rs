@@ -18,6 +18,7 @@ pub mod behavior;
 pub mod buffer;
 pub mod environment;
 pub mod executor;
+pub mod integration;
 pub mod networks;
 pub mod reward;
 pub mod state;
@@ -29,6 +30,9 @@ pub use behavior::{AttentionModel, MousePathGenerator, Point, ScrollGenerator, T
 pub use buffer::{ReplayBuffer, Transition};
 pub use environment::{BotDetector, DetectionReason, DetectionResult, TrainingEnvironment};
 pub use executor::{ActionExecutor, ExecutionResult};
+pub use integration::{
+    AgentConfig, AgentStep, DetectionInfo, IntegratedAgent, SessionResult, SessionStatistics,
+};
 pub use networks::{ActorNetwork, CriticNetwork, TemperatureParameter};
 pub use reward::{RewardCalculator, StepOutcome};
 pub use state::State;
