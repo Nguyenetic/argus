@@ -1,0 +1,45 @@
+[package]
+name = "argus-captcha"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Core dependencies
+argus-core = { path = "../argus-core" }
+argus-browser = { path = "../argus-browser" }
+tokio.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rand.workspace = true
+
+# Computer Vision & ML
+tch = "0.17"              # PyTorch Rust bindings
+image = "0.25"            # Image processing
+imageproc = "0.25"        # Image processing algorithms
+rusttype = "0.9"          # Font rendering for training
+
+# OCR
+tesseract = "0.14"        # Tesseract OCR bindings
+
+# Audio processing
+hound = "3.5"             # WAV file I/O
+rustfft = "6.1"           # FFT for audio
+whisper-rs = { version = "0.10", optional = true }  # Whisper for audio transcription
+
+# HTTP & Browser
+reqwest = { version = "0.11", features = ["json"] }
+chromiumoxide = "0.5"
+base64 = "0.22"
+
+# Utilities
+ndarray = "0.15"
+rayon = "1.8"             # Parallel processing
+
+[features]
+default = []
+audio = ["whisper-rs"]    # Optional audio CAPTCHA support
