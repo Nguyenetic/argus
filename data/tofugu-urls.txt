@@ -1,0 +1,14 @@
+# Tofugu Japanese Grammar Tutorial URLs
+# 11 pages covering fundamental Japanese grammar concepts
+
+https://www.tofugu.com/japanese-grammar/date-and-time/
+https://www.tofugu.com/japanese-grammar/kosoado/
+https://www.tofugu.com/japanese-grammar/i-adjective/
+https://www.tofugu.com/japanese-grammar/noun/
+https://www.tofugu.com/japanese-grammar/na-adjective/
+https://www.tofugu.com/japanese-grammar/personal-pronouns/
+https://www.tofugu.com/japanese-grammar/numbers-and-counters/
+https://www.tofugu.com/japanese-grammar/sentences-and-clauses/
+https://www.tofugu.com/japanese-grammar/plural-and-quantity/
+https://www.tofugu.com/japanese-grammar/verb-conjugation-groups/
+https://www.tofugu.com/japanese-grammar/transitivity/

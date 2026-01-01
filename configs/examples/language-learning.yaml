@@ -1,0 +1,118 @@
+# Language Learning Extractor
+# Generic configuration for extracting structured content from language learning sites
+# Works with Tofugu, Japanese grammar guides, and similar educational content
+
+version: "1.0"
+name: "Language Learning Extractor"
+description: "Extract vocabulary tables, example sentences, and hierarchical content from language learning websites"
+
+# URL patterns this config is designed for (optional - if empty, matches all)
+url_patterns:
+  - "*.tofugu.com/*"
+  - "*.japanesepod101.com/*"
+  - "*.jisho.org/*"
+
+# Global settings
+settings:
+  trim_whitespace: true
+  filter_empty: true
+  fallback_to_raw: true
+  max_items: 0  # 0 = unlimited
+
+extractors:
+  # Extract article metadata
+  - name: "metadata"
+    type: keyvalue
+    pairs:
+      title:
+        selector: "h1, .article-title, .entry-title"
+      author:
+        selector: ".author, .byline, [rel='author']"
+        optional: true
+      date:
+        selector: "time, .date, .published"
+        attribute: "datetime"
+        optional: true
+      category:
+        selector: ".category, .tag, .breadcrumb a:last-child"
+        optional: true
+
+  # Extract vocabulary tables (common in grammar/vocab articles)
+  - name: "vocab_tables"
+    type: table
+    selector: "table"
+    columns:
+      term:
+        index: 0
+      reading:
+        index: 1
+        optional: true
+      meaning:
+        index: 2
+        optional: true
+      notes:
+        index: 3
+        optional: true
+    skip_rows: 1  # Skip header row
+
+  # Extract definition lists (term + definition pairs)
+  - name: "definitions"
+    type: paired
+    container: "dl, .definitions, .glossary"
+    first:
+      selector: "dt, .term, .word"
+      field: "term"
+    second:
+      selector: "dd, .definition, .meaning"
+      field: "definition"
+      sibling: true
+
+  # Extract example sentences from lists
+  - name: "examples"
+    type: list
+    container: ".examples, .example-sentences, ol, ul"
+    item_selector: "li"
+    fields:
+      sentence:
+        default: ":self"
+      japanese:
+        selector: ".jp, .japanese, [lang='ja']"
+        optional: true
+      english:
+        selector: ".en, .english, .translation"
+        optional: true
+      romaji:
+        selector: ".romaji, .romanization"
+        optional: true
+
+  # Extract hierarchical sections (preserves document structure)
+  - name: "sections"
+    type: sections
+    headings:
+      - "h2"
+      - "h3"
+      - "h4"
+    content:
+      until_next_heading: true
+    nest_by_level: true
+
+  # Extract standalone content blocks/cards (common on modern sites)
+  - name: "content_blocks"
+    type: repeating
+    container: ".content-blocks, .cards, article"
+    block_selector: ".block, .card, .content-section, section"
+    fields:
+      title:
+        selector: "h2, h3, .title, .heading"
+        optional: true
+      content:
+        selector: "p, .text, .body"
+      image:
+        selector: "img"
+        attribute: "src"
+        optional: true
+
+# Validation rules
+validation:
+  required_fields: []
+  min_items: {}

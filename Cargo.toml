@@ -5,6 +5,7 @@ members = [
     "crates/argus-storage",
     "crates/argus-api",
     "crates/argus-rl",
+    "crates/argus-extract",
 ]
 resolver = "2"
 
@@ -64,6 +65,7 @@ colored = "2.1"
 # Serialization
 serde.workspace = true
 serde_json.workspace = true
+serde_yaml = "0.9"
 
 # Error handling
 anyhow.workspace = true
@@ -91,4 +93,13 @@ rand.workspace = true
 
 # Local crates
 argus-browser = { path = "crates/argus-browser" }
-argus-rl = { path = "crates/argus-rl" }
+argus-storage = { path = "crates/argus-storage" }
+argus-rl = { path = "crates/argus-rl", optional = true }
+argus-extract = { path = "crates/argus-extract" }
+
+[features]
+default = []
+rl = ["dep:argus-rl"]
+
+[dev-dependencies]
+argus-core = { path = "crates/argus-core" }
