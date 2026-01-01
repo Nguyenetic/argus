@@ -33,7 +33,7 @@ whisper-rs = { version = "0.10", optional = true }  # Whisper for audio transcri
 
 # HTTP & Browser
 reqwest = { version = "0.11", features = ["json"] }
-chromiumoxide = "0.5"
+chromiumoxide = "0.8"
 base64 = "0.22"
 
 # Utilities

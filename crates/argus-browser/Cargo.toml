@@ -14,7 +14,7 @@ tracing.workspace = true
 rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-chromiumoxide = "0.5"
+chromiumoxide = "0.8"
 async-trait = "0.1"
 reqwest = { version = "0.11", features = ["json"] }
 futures = "0.3"

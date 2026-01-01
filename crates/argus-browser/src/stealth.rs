@@ -6,9 +6,7 @@
 /// - Spoof browser properties
 /// - Mimic human-like behavior
 use anyhow::{Context, Result};
-use chromiumoxide::cdp::browser_protocol::emulation::{
-    SetNavigatorOverridesParams, SetUserAgentOverrideParams,
-};
+use chromiumoxide::cdp::browser_protocol::emulation::SetUserAgentOverrideParams;
 use chromiumoxide::cdp::browser_protocol::page::AddScriptToEvaluateOnNewDocumentParams;
 use chromiumoxide::Page;
 use rand::Rng;
@@ -135,7 +133,9 @@ impl StealthMode {
 
         page.execute(AddScriptToEvaluateOnNewDocumentParams {
             source: script.to_string(),
-            ..Default::default()
+            world_name: None,
+            include_command_line_api: None,
+            run_immediately: None,
         })
         .await?;
 
@@ -151,7 +151,7 @@ impl StealthMode {
             user_agent: user_agent.clone(),
             accept_language: Some("en-US,en;q=0.9".to_string()),
             platform: Some(self.random_platform()),
-            ..Default::default()
+            user_agent_metadata: None,
         })
         .await?;
 
@@ -207,7 +207,9 @@ impl StealthMode {
 
         page.execute(AddScriptToEvaluateOnNewDocumentParams {
             source: script.to_string(),
-            ..Default::default()
+            world_name: None,
+            include_command_line_api: None,
+            run_immediately: None,
         })
         .await?;
 
@@ -255,7 +257,9 @@ impl StealthMode {
 
         page.execute(AddScriptToEvaluateOnNewDocumentParams {
             source: script,
-            ..Default::default()
+            world_name: None,
+            include_command_line_api: None,
+            run_immediately: None,
         })
         .await?;
 
@@ -309,7 +313,9 @@ impl StealthMode {
 
         page.execute(AddScriptToEvaluateOnNewDocumentParams {
             source: script,
-            ..Default::default()
+            world_name: None,
+            include_command_line_api: None,
+            run_immediately: None,
         })
         .await?;
 
@@ -348,7 +354,9 @@ impl StealthMode {
 
         page.execute(AddScriptToEvaluateOnNewDocumentParams {
             source: script,
-            ..Default::default()
+            world_name: None,
+            include_command_line_api: None,
+            run_immediately: None,
         })
         .await?;
 
@@ -390,7 +398,9 @@ impl StealthMode {
 
         page.execute(AddScriptToEvaluateOnNewDocumentParams {
             source: script.to_string(),
-            ..Default::default()
+            world_name: None,
+            include_command_line_api: None,
+            run_immediately: None,
         })
         .await?;
 
