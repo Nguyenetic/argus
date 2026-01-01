@@ -1,0 +1,17 @@
+{
+  "crons": [
+    {
+      "path": "/api/scrape",
+      "schedule": "0 9 * * *"
+    }
+  ],
+  "functions": {
+    "api/scrape.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  },
+  "env": {
+    "PLAYWRIGHT_BROWSERS_PATH": "/tmp/playwright"
+  }
+}

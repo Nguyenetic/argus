@@ -1,0 +1,30 @@
+{
+  "name": "vercel-scraper",
+  "version": "1.0.0",
+  "description": "Google Maps Review Scraper for Vercel Cron Jobs",
+  "type": "module",
+  "scripts": {
+    "dev": "npx ts-node --esm src/scraper.ts",
+    "build": "tsc",
+    "test": "node dist/scraper.js"
+  },
+  "keywords": [
+    "google-maps",
+    "scraper",
+    "playwright",
+    "vercel"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@playwright/browser-chromium": "^1.49.1",
+    "@playwright/test": "^1.57.0",
+    "playwright": "^1.57.0",
+    "playwright-core": "^1.49.1",
+    "typescript": "^5.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@vercel/node": "^5.1.8"
+  }
+}
