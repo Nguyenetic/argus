@@ -37,25 +37,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing url parameter or GOOGLE_MAPS_URL env var' });
   }
 
+  // REQUIRED: Browserless.io URL for remote browser
+  // Vercel serverless functions cannot run local browsers
+  const browserWSEndpoint = process.env.BROWSERLESS_URL;
+
+  if (!browserWSEndpoint) {
+    return res.status(500).json({
+      error: 'BROWSERLESS_URL environment variable is required',
+      message: 'Vercel cannot run local browsers. Sign up at https://browserless.io and set BROWSERLESS_URL=wss://chrome.browserless.io?token=YOUR_TOKEN'
+    });
+  }
+
   try {
     console.log(`Starting scrape for: ${url}`);
+    console.log(`Connecting to remote browser...`);
 
-    const browserWSEndpoint = process.env.BROWSERLESS_URL;
-
-    let browser;
-    if (browserWSEndpoint) {
-      browser = await chromium.connect(browserWSEndpoint);
-    } else {
-      browser = await chromium.launch({
-        headless: true,
-        args: [
-          '--disable-blink-features=AutomationControlled',
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-        ]
-      });
-    }
+    const browser = await chromium.connect(browserWSEndpoint);
 
     const context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
