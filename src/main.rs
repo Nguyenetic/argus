@@ -210,6 +210,48 @@ enum Commands {
         config: PathBuf,
     },
 
+    /// Batch extract structured data from multiple URLs in parallel
+    BatchExtract {
+        /// File containing URLs (one per line) or directory with URL files
+        input: PathBuf,
+
+        /// Path to YAML configuration file
+        #[arg(short, long)]
+        config: PathBuf,
+
+        /// Output directory for extracted JSON files
+        #[arg(short, long, default_value = "./data/extracted")]
+        output: PathBuf,
+
+        /// Number of concurrent extractors (default: CPU cores * 2)
+        #[arg(short = 'j', long)]
+        concurrency: Option<usize>,
+
+        /// Use browser automation (JavaScript rendering)
+        #[arg(short = 'b', long)]
+        browser: bool,
+
+        /// Pretty print JSON output
+        #[arg(long)]
+        pretty: bool,
+
+        /// Request timeout in seconds
+        #[arg(short = 't', long, default_value = "30")]
+        timeout: u64,
+
+        /// Rate limit (requests per second, 0 = no limit)
+        #[arg(short = 'r', long, default_value = "0")]
+        rate_limit: u64,
+
+        /// Continue on error (don't stop on failed extractions)
+        #[arg(long)]
+        continue_on_error: bool,
+
+        /// Skip URLs that already have output files
+        #[arg(long)]
+        skip_existing: bool,
+    },
+
     /// Train the RL agent for anti-bot evasion
     #[cfg(feature = "rl")]
     Train {
@@ -400,6 +442,32 @@ async fn main() -> Result<()> {
         }
         Commands::ValidateConfig { config } => {
             validate_config_command(&config)?;
+        }
+        Commands::BatchExtract {
+            input,
+            config,
+            output,
+            concurrency,
+            browser,
+            pretty,
+            timeout,
+            rate_limit,
+            continue_on_error,
+            skip_existing,
+        } => {
+            batch_extract_command(
+                &input,
+                &config,
+                &output,
+                concurrency,
+                browser,
+                pretty,
+                timeout,
+                rate_limit,
+                continue_on_error,
+                skip_existing,
+            )
+            .await?;
         }
 
         #[cfg(feature = "rl")]
@@ -1592,6 +1660,291 @@ fn validate_config_command(config_path: &PathBuf) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Batch extract structured data from multiple URLs in parallel
+async fn batch_extract_command(
+    input: &PathBuf,
+    config_path: &PathBuf,
+    output_dir: &PathBuf,
+    concurrency: Option<usize>,
+    use_browser: bool,
+    pretty: bool,
+    timeout_secs: u64,
+    rate_limit: u64,
+    continue_on_error: bool,
+    skip_existing: bool,
+) -> Result<()> {
+    use futures::stream::{self, StreamExt};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
+    println!(
+        "{}",
+        "🦅 Argus - Batch Structured Data Extraction"
+            .bright_blue()
+            .bold()
+    );
+    println!();
+
+    // Determine concurrency (default: CPU cores * 2, max 32)
+    let num_cpus = std::thread::available_parallelism()
+        .map(|p| p.get())
+        .unwrap_or(4);
+    let concurrency = concurrency.unwrap_or(num_cpus * 2).min(32);
+
+    // Load and validate configuration
+    println!("{}", "📋 Loading configuration...".yellow());
+    let engine = ExtractorEngine::from_file(config_path)
+        .context("Failed to load extraction configuration")?;
+    let config_name = engine.config().name.clone();
+    println!(
+        "   Config: {} ({} extractors)",
+        config_name.bright_cyan(),
+        engine.config().extractors.len()
+    );
+
+    // Read URLs from file
+    let urls_content = fs::read_to_string(input)
+        .context(format!("Failed to read URLs from {}", input.display()))?;
+
+    let urls: Vec<String> = urls_content
+        .lines()
+        .map(|line| line.trim())
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(|s| s.to_string())
+        .collect();
+
+    if urls.is_empty() {
+        return Err(anyhow::anyhow!("No URLs found in {}", input.display()));
+    }
+
+    // Create output directory
+    fs::create_dir_all(output_dir)?;
+
+    // Filter out existing files if skip_existing is set
+    let urls_to_process: Vec<String> = if skip_existing {
+        urls.iter()
+            .filter(|url| {
+                let filename = url_to_filename(url);
+                let path = output_dir.join(&filename);
+                !path.exists()
+            })
+            .cloned()
+            .collect()
+    } else {
+        urls
+    };
+
+    let total_urls = urls_to_process.len();
+    if total_urls == 0 {
+        println!(
+            "{}",
+            "✅ All URLs already processed (use without --skip-existing to re-extract)"
+                .bright_green()
+        );
+        return Ok(());
+    }
+
+    println!();
+    println!("{}: {}", "URLs to process".bright_cyan(), total_urls);
+    println!(
+        "{}: {} (CPU cores: {})",
+        "Concurrency".bright_cyan(),
+        concurrency,
+        num_cpus
+    );
+    if use_browser {
+        println!("{}", "🌐 Using browser automation".bright_cyan());
+    }
+    if rate_limit > 0 {
+        println!("{}: {} req/sec", "Rate limit".bright_cyan(), rate_limit);
+    }
+    if skip_existing {
+        println!("{}", "⏭️  Skipping existing files".bright_cyan());
+    }
+    println!();
+
+    // Setup progress tracking
+    let progress = ProgressBar::new(total_urls as u64);
+    progress.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} ({per_sec}) {msg}")
+            .unwrap()
+            .progress_chars("█▓▒░"),
+    );
+
+    let start_time = std::time::Instant::now();
+
+    // Counters for success/failure
+    let success_count = Arc::new(AtomicUsize::new(0));
+    let error_count = Arc::new(AtomicUsize::new(0));
+
+    // Rate limiter
+    let rate_delay = if rate_limit > 0 {
+        Some(Duration::from_millis(1000 / rate_limit))
+    } else {
+        None
+    };
+
+    // Create shared references for the closure
+    let config_path = config_path.clone();
+    let output_dir = output_dir.clone();
+
+    // Process URLs in parallel using stream
+    let results: Vec<Result<String>> = stream::iter(urls_to_process)
+        .map(|url| {
+            let config_path = config_path.clone();
+            let output_dir = output_dir.clone();
+            let progress = progress.clone();
+            let success_count = success_count.clone();
+            let error_count = error_count.clone();
+
+            async move {
+                // Load engine for each task (thread-safe)
+                let engine = match ExtractorEngine::from_file(&config_path) {
+                    Ok(e) => e,
+                    Err(e) => {
+                        error_count.fetch_add(1, Ordering::Relaxed);
+                        progress.inc(1);
+                        return Err(anyhow::anyhow!("Config error: {}", e));
+                    }
+                };
+
+                // Fetch HTML
+                let html = match fetch_with_http(&url, timeout_secs, 3).await {
+                    Ok(h) => h,
+                    Err(e) => {
+                        error_count.fetch_add(1, Ordering::Relaxed);
+                        progress.inc(1);
+                        progress.set_message(format!("❌ {}", truncate_url(&url, 30)));
+                        return Err(anyhow::anyhow!("Fetch error for {}: {}", url, e));
+                    }
+                };
+
+                // Extract data
+                let result = match engine.extract(&url, &html) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        error_count.fetch_add(1, Ordering::Relaxed);
+                        progress.inc(1);
+                        progress.set_message(format!("❌ {}", truncate_url(&url, 30)));
+                        return Err(anyhow::anyhow!("Extract error for {}: {}", url, e));
+                    }
+                };
+
+                // Save to file
+                let filename = url_to_filename(&url);
+                let output_path = output_dir.join(&filename);
+
+                let json = if pretty {
+                    serde_json::to_string_pretty(&result)
+                } else {
+                    serde_json::to_string(&result)
+                };
+
+                match json {
+                    Ok(json_str) => {
+                        if let Err(e) = fs::write(&output_path, json_str) {
+                            error_count.fetch_add(1, Ordering::Relaxed);
+                            progress.inc(1);
+                            return Err(anyhow::anyhow!("Write error for {}: {}", url, e));
+                        }
+                    }
+                    Err(e) => {
+                        error_count.fetch_add(1, Ordering::Relaxed);
+                        progress.inc(1);
+                        return Err(anyhow::anyhow!("Serialize error for {}: {}", url, e));
+                    }
+                }
+
+                success_count.fetch_add(1, Ordering::Relaxed);
+                progress.inc(1);
+                progress.set_message(format!("✓ {}", truncate_url(&url, 30)));
+
+                // Apply rate limiting
+                if let Some(delay) = rate_delay {
+                    sleep(delay).await;
+                }
+
+                Ok(filename)
+            }
+        })
+        .buffer_unordered(concurrency)
+        .collect()
+        .await;
+
+    progress.finish_with_message("Complete!");
+
+    // Summary
+    let duration = start_time.elapsed();
+    let success = success_count.load(Ordering::Relaxed);
+    let errors = error_count.load(Ordering::Relaxed);
+
+    println!();
+    println!("{}", "✅ Batch extraction complete!".bright_green().bold());
+    println!();
+    println!("{}: {}", "Total URLs".bright_cyan(), total_urls);
+    println!("{}: {}", "Successful".bright_green(), success);
+    if errors > 0 {
+        println!("{}: {}", "Failed".bright_red(), errors);
+    }
+    println!(
+        "{}: {:.2}s",
+        "Duration".bright_cyan(),
+        duration.as_secs_f64()
+    );
+    println!(
+        "{}: {:.2} pages/sec",
+        "Throughput".bright_cyan(),
+        total_urls as f64 / duration.as_secs_f64()
+    );
+    println!(
+        "{}: {}",
+        "Output directory".bright_cyan(),
+        output_dir.display()
+    );
+
+    // Show errors if any and not continuing on error
+    if errors > 0 && !continue_on_error {
+        println!();
+        println!("{}", "❌ Errors encountered:".bright_red());
+        for result in &results {
+            if let Err(e) = result {
+                println!("   - {}", e);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Convert URL to a safe filename
+fn url_to_filename(url: &str) -> String {
+    // Extract the path part after the domain
+    let clean = url
+        .trim_start_matches("https://")
+        .trim_start_matches("http://")
+        .replace(['/', '?', '&', '=', '#', ':'], "_")
+        .trim_matches('_')
+        .to_string();
+
+    // Truncate if too long and add .json extension
+    let max_len = 100;
+    if clean.len() > max_len {
+        format!("{}.json", &clean[..max_len])
+    } else {
+        format!("{}.json", clean)
+    }
+}
+
+/// Truncate URL for display
+fn truncate_url(url: &str, max_len: usize) -> String {
+    if url.len() <= max_len {
+        url.to_string()
+    } else {
+        format!("{}...", &url[..max_len])
+    }
 }
 
 #[cfg(test)]
